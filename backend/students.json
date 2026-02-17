@@ -1,0 +1,32 @@
+[
+  {
+    "id": 1,
+    "name": "John Doe",
+    "age": 20,
+    "major": "Computer Science"
+  },
+  {
+    "id": 2,
+    "name": "Jane Smith",
+    "age": 22,
+    "major": "Mathematics"
+  },
+  {
+    "id": 3,
+    "name": "Bob Johnson",
+    "age": 21,
+    "major": "Physics"
+  },
+  {
+    "id": 4,
+    "name": "Alice Williams",
+    "age": 19,
+    "major": "Engineering"
+  },
+  {
+    "id": 5,
+    "name": "Charlie Brown",
+    "age": 23,
+    "major": "Biology"
+  }
+]
