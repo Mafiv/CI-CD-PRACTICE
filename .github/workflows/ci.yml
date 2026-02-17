@@ -1,0 +1,92 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, master, develop, copilot/** ]
+  pull_request:
+    branches: [ main, master, develop ]
+
+jobs:
+  build-and-test:
+    name: Build and Test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v2
+
+    - name: Build Backend Docker Image
+      run: |
+        cd backend
+        docker build -t student-backend:latest .
+        
+    - name: Build Frontend Docker Image
+      run: |
+        cd frontend
+        docker build -t student-frontend:latest .
+
+    - name: Start services with docker-compose
+      run: |
+        docker-compose up -d
+        
+    - name: Wait for services to be ready
+      run: |
+        echo "Waiting for backend to be ready..."
+        timeout 60 bash -c 'until curl -f http://localhost:3000/health; do sleep 2; done'
+        echo "Backend is ready!"
+        
+    - name: Test Backend API
+      run: |
+        echo "Testing /api/students endpoint..."
+        response=$(curl -s http://localhost:3000/api/students)
+        echo "Response: $response"
+        
+        # Check if response is valid JSON
+        echo "$response" | jq . > /dev/null
+        
+        # Check if response is an array
+        if [ $(echo "$response" | jq 'type') != '"array"' ]; then
+          echo "Error: Response is not an array"
+          exit 1
+        fi
+        
+        # Check if we have students
+        count=$(echo "$response" | jq 'length')
+        if [ "$count" -lt 1 ]; then
+          echo "Error: No students found"
+          exit 1
+        fi
+        
+        echo "Backend API test passed! Found $count students."
+
+    - name: Test Frontend
+      run: |
+        echo "Testing frontend..."
+        response=$(curl -s http://localhost:8080)
+        
+        # Check if HTML contains expected content
+        if echo "$response" | grep -q "Student Management System"; then
+          echo "Frontend test passed!"
+        else
+          echo "Error: Frontend does not contain expected content"
+          exit 1
+        fi
+
+    - name: Show running containers
+      if: always()
+      run: docker-compose ps
+
+    - name: Show backend logs
+      if: always()
+      run: docker-compose logs backend
+
+    - name: Show frontend logs
+      if: always()
+      run: docker-compose logs frontend
+
+    - name: Cleanup
+      if: always()
+      run: docker-compose down
